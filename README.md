@@ -63,4 +63,4 @@ No credential files are included or required. Enter your own key at the hidden s
 
 The launcher downloads hash-pinned public Nightshift assets from https://meterless.ai/Nightshift/WEB/ and the founder's original interface from https://github.com/jahsistjohn1-a11y/little-jahsi-graduation-loop at the revision in `little_jahsi.lock.json`. Upstream assets retain their respective owners' terms. This package does not redistribute downloaded assets or model weights.
 
-This is a local working demonstration. Zetaris/H-MEM remain local memory mirrors. Public deployment and HackOS submission are separate steps.
+This is a local working demonstration. An optional real Zetaris SQL context connection is available through `--zetaris`; see [Zetaris setup and evidence](ZETARIS.md). A real query must succeed before claiming it is connected. H-MEM and check-in memory remain local. Public deployment and HackOS submission are separate steps.

@@ -19,6 +19,6 @@ The earlier Mac live test used local Qwen generation with a separate DeepSeek ju
 
 DeepSeek's official API documentation lists `deepseek-v4-pro` and `deepseek-flash`, and accepts the legacy Flash alias used by Nightshift's pinned catalog: https://api-docs.deepseek.com/ . Catalog alias metadata is normalized by the relay; original provider responses are retained in runtime evidence. Native grading and verdict logic are not overridden.
 
-The server still runs locally. An online deployment requires hosting and a backend-held credential. Zetaris/H-MEM remain local mirrors. No hackathon submission has been made.
+The server still runs locally. An online deployment requires hosting and a backend-held credential. H-MEM and check-in memory remain local mirrors. The optional `--zetaris` transport retrieves actual synthetic context rows; a live instance query is still required to validate that connection. New coverage: 19 Python tests and 9 JavaScript tests passed, including authenticated context transport and closed failure paths. No hackathon submission has been made.
 
 The launcher key-prompt behavior is tested, including refusal of noninteractive input and empty keys. No paid provider requests were made while preparing this revision.
