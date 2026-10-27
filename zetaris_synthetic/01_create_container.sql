@@ -1,0 +1,1 @@
+CREATE SCHEMASTORE CONTAINER little_jahsi_demo

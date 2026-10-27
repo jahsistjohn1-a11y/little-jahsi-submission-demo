@@ -19,6 +19,7 @@ import urllib.error
 import urllib.request
 from graduation_demo import ensure_demo, wire_demo
 from deepseek_relay import DeepSeekRelay
+from zetaris_context import ZetarisContext
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / ".runtime" / "web"
@@ -87,6 +88,10 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         name = self.path.split("?", 1)[0]
+        if name == "/zetaris-config":
+            context = getattr(self.server, "zetaris_context", None)
+            self.send_json(context.config() if context else {"enabled": False})
+            return
         if name == "/judge-config":
             relay = getattr(self.server, "judge_relay", None)
             self.send_json(relay.config() if relay else {"enabled": False})
@@ -128,6 +133,21 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
+        if self.path == "/zetaris-context":
+            context = getattr(self.server, "zetaris_context", None)
+            if not context:
+                self.send_json({"error": "Zetaris is not enabled"}, 404)
+                return
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                if length != 2 or self.rfile.read(length) != b"{}":
+                    raise ValueError("This endpoint accepts only the server's fixed query")
+                self.send_json(context.retrieve(self.headers.get("Origin", ""), self.headers.get("Authorization", "")))
+            except PermissionError:
+                self.send_json({"error": "Local session authorization required"}, 403)
+            except (ValueError, RuntimeError, subprocess.TimeoutExpired):
+                self.send_json({"error": "Zetaris context query failed. Check the private server evidence. No plan was generated."}, 502)
+            return
         relay = getattr(self.server, "judge_relay", None)
         if self.path != "/deepseek-relay/v1/chat/completions" or not relay:
             self.send_json({"error": "No configured endpoint"}, 404)
@@ -155,7 +175,7 @@ class LabHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def serve(port: int = 8765, api_key=None) -> None:
+def serve(port: int = 8765, api_key=None, zetaris=None) -> None:
     bootstrap()
     print(f"Nightshift local proof: http://127.0.0.1:{port}/proof.html", flush=True)
     print(f"Little Jahsi live demo: http://127.0.0.1:{port}/graduation-loop.html", flush=True)
@@ -164,6 +184,7 @@ def serve(port: int = 8765, api_key=None) -> None:
     else:
         print("Connect Ollama under Setup > Local Network Compute at http://127.0.0.1:11435/v1. Ctrl+C stops this server.", flush=True)
     with http.server.ThreadingHTTPServer(("127.0.0.1", port), LabHandler) as server:
+        server.zetaris_context = zetaris
         server.judge_relay = DeepSeekRelay(api_key, ROOT / ".runtime" / "evidence",
                                           f"http://127.0.0.1:{port}") if api_key else None
         try:
@@ -254,7 +275,11 @@ def main(argv=None):
     parser.add_argument("command", choices=["bootstrap", "serve", "setup-models", "start"], default="start", nargs="?")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--deepseek", action="store_true", help="Enable bounded paid generation and judging; enter your key at a hidden terminal prompt")
+    parser.add_argument("--zetaris", action="store_true", help="Retrieve real synthetic Zetaris context; interactive setup, credential held in memory")
+    parser.add_argument("--zetaris-route", choices=["ui", "legacy", "raw"], default="ui")
     args = parser.parse_args(argv)
+    if args.zetaris and args.command not in ("start", "serve"):
+        parser.error("--zetaris is available only with start or serve")
     if args.deepseek and args.command not in ("start", "serve"):
         parser.error("--deepseek is available only with start or serve")
     api_key = None
@@ -273,10 +298,27 @@ def main(argv=None):
             parser.error("A DeepSeek API key is required for this mode")
         # Validate before fetching assets or starting any server.
         DeepSeekRelay(api_key, ROOT / ".runtime" / "evidence", f"http://127.0.0.1:{args.port}")
+    zetaris = None
+    if args.zetaris:
+        if not sys.stdin.isatty():
+            parser.error("Run --zetaris in an interactive terminal for hidden credential entry")
+        try:
+            origin = input("Zetaris origin (HTTPS, or local HTTP): ").strip()
+            org_id = input("Zetaris numeric organization ID: ").strip()
+            sql = input("Fixed SELECT query from a synthetic demo table (max five rows): ").strip()
+            with warnings.catch_warnings():
+                warnings.simplefilter("error", getpass.GetPassWarning)
+                credential = getpass.getpass("Zetaris bearer token/API key (hidden; not saved): ")
+            zetaris = ZetarisContext(origin, org_id, credential, sql, ROOT / ".runtime" / "evidence",
+                                     f"http://127.0.0.1:{args.port}", args.zetaris_route)
+        except (ValueError, getpass.GetPassWarning):
+            parser.error("Invalid Zetaris settings or terminal cannot hide credentials")
+        except (EOFError, KeyboardInterrupt):
+            parser.exit(1, "\nZetaris setup cancelled.\n")
     if args.command == "bootstrap":
         bootstrap()
     elif args.command == "serve" or (args.command == "start" and args.deepseek):
-        serve(args.port, api_key)
+        serve(args.port, api_key, zetaris) if zetaris else serve(args.port, api_key)
     else:
         with model_server(args.port):
             if args.command == "setup-models":
@@ -284,7 +326,7 @@ def main(argv=None):
             else:
                 if verify_models():
                     raise RuntimeError("Run setup-models first to download the tested local models.")
-                serve(args.port)
+                serve(args.port, zetaris=zetaris) if zetaris else serve(args.port)
 
 
 if __name__ == "__main__":
