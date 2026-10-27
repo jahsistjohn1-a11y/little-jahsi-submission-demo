@@ -63,3 +63,16 @@ class ZetarisTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess([], 0, raw, '')
                 with self.assertRaises(RuntimeError):
                     context.retrieve(context.local_origin, 'Bearer '+context.token)
+
+    @patch('zetaris_context.subprocess.run')
+    def test_current_platform_records_response_is_preserved_and_verified(self, run):
+        with tempfile.TemporaryDirectory() as directory:
+            context = self.context(directory)
+            response = {"records": [{"seven": "7"}], "pageNumber": 1, "pageLimit": 5,
+                        "totalCount": 1, "totalPages": 1, "queryToken": "opaque-demo"}
+            run.return_value = subprocess.CompletedProcess([], 0, json.dumps(response)+'\n200', '')
+            result = context.retrieve(context.local_origin, 'Bearer '+context.token)
+            self.assertTrue(result['verified'])
+            self.assertEqual(result['rows'], response['records'])
+            record = json.loads((Path(directory)/result['evidence_id']).read_text())
+            self.assertEqual(record['response'], response)

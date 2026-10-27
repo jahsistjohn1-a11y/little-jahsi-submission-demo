@@ -77,6 +77,8 @@ class ZetarisContext:
         rows = data if isinstance(data, list) else data.get("rows") if isinstance(data, dict) else None
         if rows is None and isinstance(response, dict):
             rows = response.get("rows")
+        if rows is None and isinstance(response, dict):
+            rows = response.get("records")
         if not isinstance(rows, list) or not rows or len(rows) > 5 or len(json.dumps(rows)) > 12000:
             raise RuntimeError("Zetaris returned no usable bounded context rows; no plan was generated")
         return {"verified": True, "source": "Zetaris SQL", "endpoint": url, "request_id": request_id,
