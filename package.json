@@ -1,0 +1,9 @@
+{
+  "name": "little-jahsi-nightshift-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test meterless_nightshift_lab/tests/test_graduation_bridge.mjs meterless_nightshift_lab/tests/test_proof.mjs"
+  }
+}

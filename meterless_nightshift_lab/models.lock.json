@@ -1,0 +1,18 @@
+{
+  "qwen2.5:7b": {
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "bytes": 4683087332
+  },
+  "llama3.2:3b": {
+    "digest": "a80c4f17acd55265feec403c7aef86be0c25983ab279d83f3bcd3abbcb5b8b72",
+    "bytes": 2019393189
+  },
+  "qwen2.5:3b": {
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "bytes": 1929912432
+  },
+  "hf.co/LiquidAI/LFM2.5-350M-GGUF:Q4_K_M": {
+    "digest": "1f41ea40955182f8c0f5b969a152736cc6be6ce9e9173bfcc1582f7aff90c454",
+    "bytes": 229323786
+  }
+}
